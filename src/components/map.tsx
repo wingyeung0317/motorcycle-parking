@@ -111,8 +111,8 @@ const createNavigationLinks = (lat: number, lng: number, name: string) => {
     
     return {
         waze: {
-            app: `waze://?ll=${lat},${lng}&navigate=no`,
-            web: `https://waze.com/ul?ll=${lat},${lng}&navigate=no&z=17`,
+            app: `waze://?ll=${lat},${lng}`,
+            web: `https://waze.com/ul?ll=${lat},${lng}`,
             logo: 'https://web.archive.org/web/20250516145432if_/https://lh3.googleusercontent.com/bS6WdjfrzW5ixvGvDNYelTpQ6rVvRpk03XN9QzxUIieePHBB7T6cdg-ltInbM6znRmFb0flVDM9_E11cij4985pxo69izhfVMx5ENYE=h400-w400',
             name: 'Waze'
         },
