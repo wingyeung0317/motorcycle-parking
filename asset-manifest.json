@@ -1,0 +1,13 @@
+{
+  "files": {
+    "main.css": "/motorcycle-parking/static/css/main.9e683666.css",
+    "main.js": "/motorcycle-parking/static/js/main.c58c38bd.js",
+    "index.html": "/motorcycle-parking/index.html",
+    "main.9e683666.css.map": "/motorcycle-parking/static/css/main.9e683666.css.map",
+    "main.c58c38bd.js.map": "/motorcycle-parking/static/js/main.c58c38bd.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.9e683666.css",
+    "static/js/main.c58c38bd.js"
+  ]
+}
