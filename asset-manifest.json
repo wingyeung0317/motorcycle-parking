@@ -1,13 +1,13 @@
 {
   "files": {
     "main.css": "/motorcycle-parking/static/css/main.9e683666.css",
-    "main.js": "/motorcycle-parking/static/js/main.b5d39b77.js",
+    "main.js": "/motorcycle-parking/static/js/main.4670b393.js",
     "index.html": "/motorcycle-parking/index.html",
     "main.9e683666.css.map": "/motorcycle-parking/static/css/main.9e683666.css.map",
-    "main.b5d39b77.js.map": "/motorcycle-parking/static/js/main.b5d39b77.js.map"
+    "main.4670b393.js.map": "/motorcycle-parking/static/js/main.4670b393.js.map"
   },
   "entrypoints": [
     "static/css/main.9e683666.css",
-    "static/js/main.b5d39b77.js"
+    "static/js/main.4670b393.js"
   ]
 }
