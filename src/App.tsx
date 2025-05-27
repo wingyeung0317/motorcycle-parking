@@ -1,10 +1,13 @@
 import React from 'react';
-import logo from './logo.svg';
 import MapComponent from './components/map';
+import Footer from './components/Footer';
 
 function App() {
   return (
-    <MapComponent />
+    <div style={{ position: 'relative', height: '100vh' }}>
+      <MapComponent />
+      <Footer />
+    </div>
   );
 }
 

@@ -160,21 +160,45 @@ function KmlMarkers({ kmlUrl }: { kmlUrl: string }) {
     useEffect(() => {
         console.log("開始載入 KML:", kmlUrl);
         
-        fetch(kmlUrl)
-            .then(res => {
+        const loadKmlWithFallback = async () => {
+            try {
+                // 嘗試載入主要 URL
+                const res = await fetch(kmlUrl);
                 console.log("KML fetch 狀態:", res.status);
+                
                 if (!res.ok) {
                     throw new Error(`HTTP ${res.status}`);
                 }
-                return res.text();
-            })
-            .then(kmlText => {
+                
+                const kmlText = await res.text();
                 console.log("KML 內容長度:", kmlText.length);
                 const parsedMarkers = parseKmlMarkers(kmlText);
                 setMarkers(parsedMarkers);
                 console.log("解析後的標記:", parsedMarkers);
-            })
-            .catch(err => console.error('Error loading KML:', err));
+            } catch (error) {
+                console.warn('無法載入主要 KML URL:', error);
+                console.log('嘗試載入本地 output.kml');
+                
+                try {
+                    // 回退到本地檔案
+                    const fallbackRes = await fetch('./output.kml');
+                    
+                    if (!fallbackRes.ok) {
+                        throw new Error(`HTTP ${fallbackRes.status} - 本地檔案載入失敗`);
+                    }
+                    
+                    const fallbackKmlText = await fallbackRes.text();
+                    console.log("本地 KML 內容長度:", fallbackKmlText.length);
+                    const fallbackMarkers = parseKmlMarkers(fallbackKmlText);
+                    setMarkers(fallbackMarkers);
+                    console.log("本地檔案解析後的標記:", fallbackMarkers);
+                } catch (fallbackError) {
+                    console.error('載入本地 KML 檔案也失敗:', fallbackError);
+                }
+            }
+        };
+        
+        loadKmlWithFallback();
     }, [kmlUrl]);
 
     return (
@@ -307,7 +331,7 @@ interface MapProps {
 }
 
 const MapComponent = (props: MapProps & { kmlUrl?: string }) => {
-    const kmlUrl = props.kmlUrl || "./output.kml";
+    const kmlUrl = props.kmlUrl || "https://raw.githubusercontent.com/wingyeung0317/-HKOSMP-KML-Google-Maps-/refs/heads/Automatic/motorcycleParking.kml";
     const { center, zoom, height, width } = props;
 
     return (
@@ -315,7 +339,7 @@ const MapComponent = (props: MapProps & { kmlUrl?: string }) => {
             center={center || [22.3964, 114.1099]}
             zoom={zoom || 11}
             scrollWheelZoom={true}
-            style={{ height: height || "95vh", width: width || "100%" }}
+            style={{ height: height || "99.9vh", width: width || "100%" }}
         >
             <TileLayer
                 attribution='&copy; <a href="https://carto.com/attributions">CARTO</a> | &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
