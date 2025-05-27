@@ -111,32 +111,32 @@ const createNavigationLinks = (lat: number, lng: number, name: string) => {
     
     return {
         waze: {
-            app: `waze://?ll=${lat},${lng}&navigate=yes&z=17`,
-            web: `https://waze.com/ul?ll=${lat},${lng}&navigate=yes&z=17`,
+            app: `waze://?ll=${lat},${lng}&navigate=no`,
+            web: `https://waze.com/ul?ll=${lat},${lng}&navigate=no&z=17`,
             logo: 'https://web.archive.org/web/20250516145432if_/https://lh3.googleusercontent.com/bS6WdjfrzW5ixvGvDNYelTpQ6rVvRpk03XN9QzxUIieePHBB7T6cdg-ltInbM6znRmFb0flVDM9_E11cij4985pxo69izhfVMx5ENYE=h400-w400',
             name: 'Waze'
         },
         googleMaps: {
-            app: `comgooglemaps://?daddr=${lat},${lng}&directionsmode=driving`,
-            web: `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`,
+            app: `comgooglemaps://?q=${lat},${lng}`,
+            web: `https://www.google.com/maps?q=${lat},${lng}`,
             logo: 'https://web.archive.org/web/20250320202115if_/https://upload.wikimedia.org/wikipedia/commons/thumb/3/39/Google_Maps_icon_%282015-2020%29.svg/1024px-Google_Maps_icon_%282015-2020%29.svg.png',
             name: 'Google Maps'
         },
         appleMaps: {
-            app: `maps://?daddr=${lat},${lng}&dirflg=d`,
-            web: `http://maps.apple.com/?daddr=${lat},${lng}&dirflg=d`,
+            app: `maps://?q=${lat},${lng}`,
+            web: `https://maps.apple.com/?q=${lat},${lng}`,
             logo: 'https://web.archive.org/web/20250515185329if_/https://www.apple.com/v/maps/d/images/overview/intro_icon__dfyvjc1ohbcm_large.png',
             name: 'Apple Maps'
         },
         amap: {
-            app: `iosamap://navi?sourceApplication=motorcycle-parking&lat=${lat}&lon=${lng}&dev=0&style=2`,
-            web: `https://uri.amap.com/navigation?to=${lng},${lat},${encodedName}&mode=car`,
+            app: `https://uri.amap.com/marker?position=${lng},${lat},${encodedName}&coordinate=wgs84&callnative=1`,
+            web: `https://uri.amap.com/marker?position=${lng},${lat},${encodedName}&coordinate=wgs84&callnative=1`,
             logo: 'https://web.archive.org/web/20250429135923if_/https://play-lh.googleusercontent.com/vowJJfgvClf1lUptAPCY5cD11mI6bctdRGhA0e_irDC7izFGBJzbTfw-89QHgIbb3h7q',
             name: '高德地圖'
         },
         baiduMap: {
-            app: `baidumap://map/direction?destination=latlng:${lat},${lng}|name:${encodedName}&mode=driving&src=motorcycle-parking`,
-            web: `https://api.map.baidu.com/direction?destination=latlng:${lat},${lng}|name:${encodedName}&mode=driving&region=香港&output=html&src=webapp.baidu.openAPIdemo`,
+            app: `baidumap://map/marker?location=${lat},${lng}&title=${encodedName}&coord_type=wgs84&output=html&src=webapp.baidu.openAPIdemo`,
+            web: `https://api.map.baidu.com/marker?location=${lat},${lng}&title=${encodedName}&coord_type=wgs84&output=html&src=webapp.baidu.openAPIdemo`,
             logo: 'https://web.archive.org/web/20250426233751if_/https://play-lh.googleusercontent.com/AqDPC657JlwJUG5oJ0k7PiUWGXGmmNmWRNORW6Wk8oetgeMqGIgTjp5yGOT0vfaXzu6P',
             name: '百度地圖'
         }

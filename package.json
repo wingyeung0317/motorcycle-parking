@@ -2,6 +2,7 @@
   "name": "motorcycle-parking",
   "version": "0.1.0",
   "private": true,
+  "homepage": "https://wingyeung0317.github.io/motorcycle-parking",
   "dependencies": {
     "@testing-library/dom": "^10.4.0",
     "@testing-library/jest-dom": "^6.6.3",
@@ -11,13 +12,14 @@
     "@types/node": "^16.18.126",
     "@types/react": "^19.1.5",
     "@types/react-dom": "^19.1.5",
+    "gh-pages": "^6.3.0",
     "leaflet": "^1.9.4",
     "leaflet-geosearch": "^4.2.0",
     "leaflet-kml": "^1.0.1",
     "leaflet-omnivore": "^0.3.4",
-    "react": "^19.1.0",
-    "react-dom": "^19.1.0",
-    "react-leaflet": "^5.0.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-leaflet": "^4.2.1",
     "react-leaflet-cluster": "^2.1.0",
     "react-scripts": "5.0.1",
     "typescript": "^4.9.5",
@@ -27,13 +29,9 @@
     "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
-    "eject": "react-scripts eject"
-  },
-  "eslintConfig": {
-    "extends": [
-      "react-app",
-      "react-app/jest"
-    ]
+    "eject": "react-scripts eject",
+    "predeploy": "npm run build",
+    "deploy": "gh-pages -d build"
   },
   "browserslist": {
     "production": [
@@ -48,12 +46,8 @@
     ]
   },
   "devDependencies": {
-    "@eslint/js": "^9.27.0",
     "@types/leaflet": "^1.9.18",
     "@types/leaflet-geosearch": "^2.7.1",
-    "eslint": "^8.57.1",
-    "eslint-plugin-react": "^7.37.5",
-    "globals": "^16.2.0",
-    "typescript-eslint": "^8.32.1"
+    "globals": "^16.2.0"
   }
 }
