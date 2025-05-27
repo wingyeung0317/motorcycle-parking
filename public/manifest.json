@@ -1,6 +1,8 @@
 {
-  "short_name": "React App",
-  "name": "Create React App Sample",
+  "short_name": "骨位",
+  "name": "香港電單車泊車位",
+  "description": "每日線上更新易通行提供的電單車泊車位，一鍵導航香港電單車泊車位，配搭地圖搜尋功能，出行話咁易。",
+  "lang": "zh-HK",
   "icons": [
     {
       "src": "favicon.ico",
@@ -20,6 +22,6 @@
   ],
   "start_url": ".",
   "display": "standalone",
-  "theme_color": "#000000",
-  "background_color": "#ffffff"
+  "theme_color": "#ffffff",
+  "background_color": "#000000"
 }
