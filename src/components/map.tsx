@@ -105,9 +105,32 @@ const parseKmlMarkers = (kmlText: string) => {
     }
 };
 
+// 添加設備檢測函數
+const detectDevice = () => {
+    const userAgent = navigator.userAgent || navigator.vendor || (window as any).opera;
+    
+    // 檢測 iOS
+    const isIOS = /iPad|iPhone|iPod/.test(userAgent) && !(window as any).MSStream;
+    
+    // 檢測 Android
+    const isAndroid = /android/i.test(userAgent);
+    
+    // 檢測 Mac
+    const isMac = /Mac|Macintosh/.test(userAgent);
+    
+    return {
+        isIOS,
+        isAndroid,
+        isMac,
+        isMobile: isIOS || isAndroid,
+        isDesktop: !isIOS && !isAndroid
+    };
+};
+
 // 建立導航連結的函數
 const createNavigationLinks = (lat: number, lng: number, name: string) => {
     const encodedName = encodeURIComponent(name);
+    const device = detectDevice();
     
     return {
         waze: {
@@ -117,8 +140,10 @@ const createNavigationLinks = (lat: number, lng: number, name: string) => {
             name: 'Waze'
         },
         googleMaps: {
-            app: `comgooglemaps://?q=${lat},${lng}`,
-            web: `https://www.google.com/maps?q=${lat},${lng}`,
+            app: device.isIOS 
+                ? `comgooglemaps://?center=${lat},${lng}&zoom=14&views=traffic` 
+                : `geo:<${lat},${lng}>?q=${lat},${lng}(${encodedName})`,
+            web: `https://maps.google.com/maps?q=${lat},${lng}`,
             logo: 'https://web.archive.org/web/20250320202115if_/https://upload.wikimedia.org/wikipedia/commons/thumb/3/39/Google_Maps_icon_%282015-2020%29.svg/1024px-Google_Maps_icon_%282015-2020%29.svg.png',
             name: 'Google Maps'
         },
@@ -129,7 +154,9 @@ const createNavigationLinks = (lat: number, lng: number, name: string) => {
             name: 'Apple Maps'
         },
         amap: {
-            app: `https://uri.amap.com/marker?position=${lng},${lat},${encodedName}&coordinate=wgs84&callnative=1`,
+            app: device.isAndroid 
+                ? `androidamap://viewMap?sourceApplication=appname&poiname=${encodedName}&lat=${lat}&lon=${lng}&dev=1`
+                : `iosamap://viewMap?sourceApplication=appname&poiname=${encodedName}&lat=${lat}&lon=${lng}&dev=1`,
             web: `https://uri.amap.com/marker?position=${lng},${lat},${encodedName}&coordinate=wgs84&callnative=1`,
             logo: 'https://web.archive.org/web/20250429135923if_/https://play-lh.googleusercontent.com/vowJJfgvClf1lUptAPCY5cD11mI6bctdRGhA0e_irDC7izFGBJzbTfw-89QHgIbb3h7q',
             name: '高德地圖'
@@ -139,19 +166,51 @@ const createNavigationLinks = (lat: number, lng: number, name: string) => {
             web: `https://api.map.baidu.com/marker?location=${lat},${lng}&title=${encodedName}&coord_type=wgs84&output=html&src=webapp.baidu.openAPIdemo`,
             logo: 'https://web.archive.org/web/20250426233751if_/https://play-lh.googleusercontent.com/AqDPC657JlwJUG5oJ0k7PiUWGXGmmNmWRNORW6Wk8oetgeMqGIgTjp5yGOT0vfaXzu6P',
             name: '百度地圖'
+        },
+        //othermap using geo URI scheme
+        otherMap: {
+            app: `geo:<${lat},${lng}>?q=${lat},${lng}(${encodedName})`,
+            web: `geo:<${lat},${lng}>?q=${lat},${lng}(${encodedName})`,
+            logo: 'https://web.archive.org/web/20240117124253if_/https://upload.wikimedia.org/wikipedia/commons/e/ec/World_Map_Blank.svg',
+            name: '其他支援Geo URI的地圖'
         }
     };
 };
 
 // 處理 app 開啟的函數
 const handleAppOpen = (appUrl: string, fallbackUrl: string) => {
-    // 嘗試開啟 app
-    window.location.href = appUrl;
+    const device = detectDevice();
     
-    // 如果 app 沒有安裝，延遲後開啟網頁版
-    setTimeout(() => {
+    if (device.isMobile) {
+        // 手機設備使用改進的深度連結處理
+        const iframe = document.createElement('iframe');
+        iframe.style.display = 'none';
+        iframe.src = appUrl;
+        document.body.appendChild(iframe);
+        
+        const timer = setTimeout(() => {
+            window.open(fallbackUrl, '_blank');
+            document.body.removeChild(iframe);
+        }, 1500);
+        
+        const cleanup = () => {
+            clearTimeout(timer);
+            if (iframe.parentNode) {
+                document.body.removeChild(iframe);
+            }
+        };
+        
+        const onBlur = () => {
+            cleanup();
+            window.removeEventListener('blur', onBlur);
+        };
+        
+        window.addEventListener('blur', onBlur);
+        setTimeout(cleanup, 3000);
+    } else {
+        // 桌面設備直接開啟網頁版
         window.open(fallbackUrl, '_blank');
-    }, 1000);
+    }
 };
 
 function KmlMarkers({ kmlUrl }: { kmlUrl: string }) {
@@ -201,6 +260,130 @@ function KmlMarkers({ kmlUrl }: { kmlUrl: string }) {
         loadKmlWithFallback();
     }, [kmlUrl]);
 
+    // 生成 Popup 內容的函數
+    const renderPopupContent = (marker: {name: string, position: [number, number]}) => {
+        const [lat, lng] = marker.position;
+        const navLinks = createNavigationLinks(lat, lng, marker.name);
+        
+        return (
+            <div className="popup-content">
+                <h3 className="popup-title">{marker.name}</h3>
+                <p className="popup-coordinates">
+                    座標: {lat.toFixed(6)}, {lng.toFixed(6)}
+                </p>
+                <div className="navigation-buttons">
+                    <button 
+                        onClick={(e) => {
+                            e.preventDefault();
+                            handleAppOpen(navLinks.waze.app, navLinks.waze.web);
+                        }}
+                        className="nav-button waze"
+                    >
+                        <img 
+                            src={navLinks.waze.logo} 
+                            alt="Waze" 
+                            className="nav-logo"
+                            onError={(e) => {
+                                e.currentTarget.style.display = 'none';
+                                e.currentTarget.nextElementSibling!.textContent = '🚗 Waze';
+                            }}
+                        />
+                        <span className="nav-text">{navLinks.waze.name}</span>
+                    </button>
+                    <button 
+                        onClick={(e) => {
+                            e.preventDefault();
+                            handleAppOpen(navLinks.googleMaps.app, navLinks.googleMaps.web);
+                        }}
+                        className="nav-button google"
+                    >
+                        <img 
+                            src={navLinks.googleMaps.logo} 
+                            alt="Google Maps" 
+                            className="nav-logo"
+                            onError={(e) => {
+                                e.currentTarget.style.display = 'none';
+                                e.currentTarget.nextElementSibling!.textContent = '🗺️ Google Maps';
+                            }}
+                        />
+                        <span className="nav-text">{navLinks.googleMaps.name}</span>
+                    </button>
+                    <button 
+                        onClick={(e) => {
+                            e.preventDefault();
+                            handleAppOpen(navLinks.appleMaps.app, navLinks.appleMaps.web);
+                        }}
+                        className="nav-button apple"
+                    >
+                        <img 
+                            src={navLinks.appleMaps.logo} 
+                            alt="Apple Maps" 
+                            className="nav-logo"
+                            onError={(e) => {
+                                e.currentTarget.style.display = 'none';
+                                e.currentTarget.nextElementSibling!.textContent = '🍎 Apple Maps';
+                            }}
+                        />
+                        <span className="nav-text">{navLinks.appleMaps.name}</span>
+                    </button>
+                    <button 
+                        onClick={(e) => {
+                            e.preventDefault();
+                            handleAppOpen(navLinks.amap.app, navLinks.amap.web);
+                        }}
+                        className="nav-button amap"
+                    >
+                        <img 
+                            src={navLinks.amap.logo} 
+                            alt="高德地圖" 
+                            className="nav-logo"
+                            onError={(e) => {
+                                e.currentTarget.style.display = 'none';
+                                e.currentTarget.nextElementSibling!.textContent = '🧭 高德地圖';
+                            }}
+                        />
+                        <span className="nav-text">{navLinks.amap.name}</span>
+                    </button>
+                    <button 
+                        onClick={(e) => {
+                            e.preventDefault();
+                            handleAppOpen(navLinks.baiduMap.app, navLinks.baiduMap.web);
+                        }}
+                        className="nav-button baidu"
+                    >
+                        <img 
+                            src={navLinks.baiduMap.logo} 
+                            alt="百度地圖" 
+                            className="nav-logo"
+                            onError={(e) => {
+                                e.currentTarget.style.display = 'none';
+                                e.currentTarget.nextElementSibling!.textContent = '📍 百度地圖';
+                            }}
+                        />
+                        <span className="nav-text">{navLinks.baiduMap.name}</span>
+                    </button>
+                    <button 
+                        onClick={(e) => {
+                            e.preventDefault();
+                            handleAppOpen(navLinks.otherMap.app, navLinks.otherMap.web);
+                        }}
+                        className="nav-button other"> 
+                        <img 
+                            src={navLinks.otherMap.logo} 
+                            alt="其他地圖" 
+                            className="nav-logo"
+                            onError={(e) => {
+                                e.currentTarget.style.display = 'none';
+                                e.currentTarget.nextElementSibling!.textContent = '🌐 其他地圖';
+                            }}
+                        />
+                        <span className="nav-text">{navLinks.otherMap.name}</span>
+                    </button>
+                </div>
+            </div>
+        );
+    };
+
     return (
         <MarkerClusterGroup
             chunkedLoading
@@ -210,115 +393,19 @@ function KmlMarkers({ kmlUrl }: { kmlUrl: string }) {
             showCoverageOnHover={false}
             zoomToBoundsOnClick={true}
         >
-            {markers.map((marker, index) => {
-                const [lat, lng] = marker.position;
-                const navLinks = createNavigationLinks(lat, lng, marker.name);
-                
-                return (
-                    <Marker key={index} position={marker.position}>
-                        <Popup maxWidth={300} minWidth={250}>
-                            <div className="popup-content">
-                                <h3 className="popup-title">{marker.name}</h3>
-                                <p className="popup-coordinates">
-                                    座標: {lat.toFixed(6)}, {lng.toFixed(6)}
-                                </p>
-                                <div className="navigation-buttons">
-                                    <button 
-                                        onClick={(e) => {
-                                            e.preventDefault();
-                                            handleAppOpen(navLinks.waze.app, navLinks.waze.web);
-                                        }}
-                                        className="nav-button waze"
-                                    >
-                                        <img 
-                                            src={navLinks.waze.logo} 
-                                            alt="Waze" 
-                                            className="nav-logo"
-                                            onError={(e) => {
-                                                e.currentTarget.style.display = 'none';
-                                                e.currentTarget.nextElementSibling!.textContent = '🚗 Waze';
-                                            }}
-                                        />
-                                        <span className="nav-text">{navLinks.waze.name}</span>
-                                    </button>
-                                    <button 
-                                        onClick={(e) => {
-                                            e.preventDefault();
-                                            handleAppOpen(navLinks.googleMaps.app, navLinks.googleMaps.web);
-                                        }}
-                                        className="nav-button google"
-                                    >
-                                        <img 
-                                            src={navLinks.googleMaps.logo} 
-                                            alt="Google Maps" 
-                                            className="nav-logo"
-                                            onError={(e) => {
-                                                e.currentTarget.style.display = 'none';
-                                                e.currentTarget.nextElementSibling!.textContent = '🗺️ Google Maps';
-                                            }}
-                                        />
-                                        <span className="nav-text">{navLinks.googleMaps.name}</span>
-                                    </button>
-                                    <button 
-                                        onClick={(e) => {
-                                            e.preventDefault();
-                                            handleAppOpen(navLinks.appleMaps.app, navLinks.appleMaps.web);
-                                        }}
-                                        className="nav-button apple"
-                                    >
-                                        <img 
-                                            src={navLinks.appleMaps.logo} 
-                                            alt="Apple Maps" 
-                                            className="nav-logo"
-                                            onError={(e) => {
-                                                e.currentTarget.style.display = 'none';
-                                                e.currentTarget.nextElementSibling!.textContent = '🍎 Apple Maps';
-                                            }}
-                                        />
-                                        <span className="nav-text">{navLinks.appleMaps.name}</span>
-                                    </button>
-                                    <button 
-                                        onClick={(e) => {
-                                            e.preventDefault();
-                                            handleAppOpen(navLinks.amap.app, navLinks.amap.web);
-                                        }}
-                                        className="nav-button amap"
-                                    >
-                                        <img 
-                                            src={navLinks.amap.logo} 
-                                            alt="高德地圖" 
-                                            className="nav-logo"
-                                            onError={(e) => {
-                                                e.currentTarget.style.display = 'none';
-                                                e.currentTarget.nextElementSibling!.textContent = '🧭 高德地圖';
-                                            }}
-                                        />
-                                        <span className="nav-text">{navLinks.amap.name}</span>
-                                    </button>
-                                    <button 
-                                        onClick={(e) => {
-                                            e.preventDefault();
-                                            handleAppOpen(navLinks.baiduMap.app, navLinks.baiduMap.web);
-                                        }}
-                                        className="nav-button baidu"
-                                    >
-                                        <img 
-                                            src={navLinks.baiduMap.logo} 
-                                            alt="百度地圖" 
-                                            className="nav-logo"
-                                            onError={(e) => {
-                                                e.currentTarget.style.display = 'none';
-                                                e.currentTarget.nextElementSibling!.textContent = '📍 百度地圖';
-                                            }}
-                                        />
-                                        <span className="nav-text">{navLinks.baiduMap.name}</span>
-                                    </button>
-                                </div>
-                            </div>
-                        </Popup>
-                    </Marker>
-                );
-            })}
+            {markers.map((marker, index) => (
+                <Marker 
+                    key={index} 
+                    position={marker.position}
+                >
+                    <Popup 
+                        maxWidth={300} 
+                        minWidth={250}
+                    >
+                        {renderPopupContent(marker)}
+                    </Popup>
+                </Marker>
+            ))}
         </MarkerClusterGroup>
     );
 }
@@ -337,7 +424,7 @@ const MapComponent = (props: MapProps & { kmlUrl?: string }) => {
     return (
         <MapContainer
             center={center || [22.3964, 114.1099]}
-            zoom={zoom || 11}
+            zoom={zoom || 10}
             scrollWheelZoom={true}
             style={{ height: height || "99.9vh", width: width || "100%" }}
         >
