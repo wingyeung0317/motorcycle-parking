@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useState } from "react";
+import React, { useRef, useEffect, useState, Suspense } from "react";
 import { MapContainer, TileLayer, useMap, Marker, Popup } from "react-leaflet";
 import MarkerClusterGroup from 'react-leaflet-cluster';
 import "leaflet/dist/leaflet.css";
@@ -136,7 +136,7 @@ const createNavigationLinks = (lat: number, lng: number, name: string) => {
         waze: {
             app: `waze://?ll=${lat},${lng}`,
             web: `https://waze.com/ul?ll=${lat},${lng}`,
-            logo: 'https://web.archive.org/web/20250516145432if_/https://lh3.googleusercontent.com/bS6WdjfrzW5ixvGvDNYelTpQ6rVvRpk03XN9QzxUIieePHBB7T6cdg-ltInbM6znRmFb0flVDM9_E11cij4985pxo69izhfVMx5ENYE=h400-w400',
+            logo: require('../assets/icons/waze.png'),
             name: 'Waze'
         },
         googleMaps: {
@@ -144,13 +144,13 @@ const createNavigationLinks = (lat: number, lng: number, name: string) => {
                 ? `comgooglemaps://?center=${lat},${lng}&zoom=14&views=traffic` 
                 : `geo:<${lat},${lng}>?q=${lat},${lng}(${encodedName})`,
             web: `https://maps.google.com/maps?q=${lat},${lng}`,
-            logo: 'https://web.archive.org/web/20250320202115if_/https://upload.wikimedia.org/wikipedia/commons/thumb/3/39/Google_Maps_icon_%282015-2020%29.svg/1024px-Google_Maps_icon_%282015-2020%29.svg.png',
+            logo: require('../assets/icons/google-maps.png'),
             name: 'Google Maps'
         },
         appleMaps: {
             app: `maps://?q=${lat},${lng}`,
             web: `https://maps.apple.com/?q=${lat},${lng}`,
-            logo: 'https://web.archive.org/web/20250515185329if_/https://www.apple.com/v/maps/d/images/overview/intro_icon__dfyvjc1ohbcm_large.png',
+            logo: require('../assets/icons/apple-maps.png'),
             name: 'Apple Maps'
         },
         amap: {
@@ -158,20 +158,20 @@ const createNavigationLinks = (lat: number, lng: number, name: string) => {
                 ? `androidamap://viewMap?sourceApplication=appname&poiname=${encodedName}&lat=${lat}&lon=${lng}&dev=1`
                 : `iosamap://viewMap?sourceApplication=appname&poiname=${encodedName}&lat=${lat}&lon=${lng}&dev=1`,
             web: `https://uri.amap.com/marker?position=${lng},${lat},${encodedName}&coordinate=wgs84&callnative=1`,
-            logo: 'https://web.archive.org/web/20250429135923if_/https://play-lh.googleusercontent.com/vowJJfgvClf1lUptAPCY5cD11mI6bctdRGhA0e_irDC7izFGBJzbTfw-89QHgIbb3h7q',
+            logo: require('../assets/icons/amap.png'),
             name: '高德地圖'
         },
         baiduMap: {
             app: `baidumap://map/marker?location=${lat},${lng}&title=${encodedName}&coord_type=wgs84&output=html&src=webapp.baidu.openAPIdemo`,
             web: `https://api.map.baidu.com/marker?location=${lat},${lng}&title=${encodedName}&coord_type=wgs84&output=html&src=webapp.baidu.openAPIdemo`,
-            logo: 'https://web.archive.org/web/20250426233751if_/https://play-lh.googleusercontent.com/AqDPC657JlwJUG5oJ0k7PiUWGXGmmNmWRNORW6Wk8oetgeMqGIgTjp5yGOT0vfaXzu6P',
+            logo: require('../assets/icons/baidu-maps.png'),
             name: '百度地圖'
         },
         //othermap using geo URI scheme
         otherMap: {
             app: `geo:<${lat},${lng}>?q=${lat},${lng}(${encodedName})`,
             web: `geo:<${lat},${lng}>?q=${lat},${lng}(${encodedName})`,
-            logo: 'https://web.archive.org/web/20240117124253if_/https://upload.wikimedia.org/wikipedia/commons/e/ec/World_Map_Blank.svg',
+            logo: require('../assets/icons/other-maps.png'),
             name: '其他支援Geo URI的地圖'
         }
     };
@@ -215,49 +215,54 @@ const handleAppOpen = (appUrl: string, fallbackUrl: string) => {
 
 function KmlMarkers({ kmlUrl }: { kmlUrl: string }) {
     const [markers, setMarkers] = useState<Array<{name: string, position: [number, number]}>>([]);
+    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        console.log("開始載入 KML:", kmlUrl);
+        const controller = new AbortController();
         
         const loadKmlWithFallback = async () => {
+            setLoading(true);
             try {
-                // 嘗試載入主要 URL
-                const res = await fetch(kmlUrl);
-                console.log("KML fetch 狀態:", res.status);
+                // 使用 AbortController 來支援取消請求
+                const res = await fetch(kmlUrl, { 
+                    signal: controller.signal,
+                    cache: 'force-cache' // 強制使用快取
+                });
                 
                 if (!res.ok) {
                     throw new Error(`HTTP ${res.status}`);
                 }
                 
                 const kmlText = await res.text();
-                console.log("KML 內容長度:", kmlText.length);
-                const parsedMarkers = parseKmlMarkers(kmlText);
-                setMarkers(parsedMarkers);
-                console.log("解析後的標記:", parsedMarkers);
-            } catch (error) {
-                console.warn('無法載入主要 KML URL:', error);
-                console.log('嘗試載入本地 output.kml');
                 
-                try {
-                    // 回退到本地檔案
-                    const fallbackRes = await fetch('./output.kml');
-                    
-                    if (!fallbackRes.ok) {
-                        throw new Error(`HTTP ${fallbackRes.status} - 本地檔案載入失敗`);
-                    }
-                    
-                    const fallbackKmlText = await fallbackRes.text();
-                    console.log("本地 KML 內容長度:", fallbackKmlText.length);
-                    const fallbackMarkers = parseKmlMarkers(fallbackKmlText);
-                    setMarkers(fallbackMarkers);
-                    console.log("本地檔案解析後的標記:", fallbackMarkers);
-                } catch (fallbackError) {
-                    console.error('載入本地 KML 檔案也失敗:', fallbackError);
+                // 使用 requestIdleCallback 來在瀏覽器空閒時解析
+                if ('requestIdleCallback' in window) {
+                    (window as any).requestIdleCallback(() => {
+                        const parsedMarkers = parseKmlMarkers(kmlText);
+                        setMarkers(parsedMarkers);
+                        setLoading(false);
+                    });
+                } else {
+                    // Fallback 使用 setTimeout
+                    setTimeout(() => {
+                        const parsedMarkers = parseKmlMarkers(kmlText);
+                        setMarkers(parsedMarkers);
+                        setLoading(false);
+                    }, 0);
+                }
+            } catch (e) {
+                if (e instanceof Error && e.name !== 'AbortError') {
+                    console.error('KML 載入失敗:', e);
+                    setLoading(false);
                 }
             }
         };
         
         loadKmlWithFallback();
+        
+        return () => {
+            controller.abort();
+        };
     }, [kmlUrl]);
 
     // 生成 Popup 內容的函數
@@ -384,29 +389,35 @@ function KmlMarkers({ kmlUrl }: { kmlUrl: string }) {
         );
     };
 
+    if (loading) {
+        return null; // 或者返回一個輕量的載入指示器
+    }
+
     return (
-        <MarkerClusterGroup
-            chunkedLoading
-            iconCreateFunction={createClusterCustomIcon}
-            maxClusterRadius={50}
-            spiderfyOnMaxZoom={true}
-            showCoverageOnHover={false}
-            zoomToBoundsOnClick={true}
-        >
-            {markers.map((marker, index) => (
-                <Marker 
-                    key={index} 
-                    position={marker.position}
-                >
-                    <Popup 
-                        maxWidth={300} 
-                        minWidth={250}
+        <Suspense fallback={<div>載入中...</div>}>
+            <MarkerClusterGroup
+                chunkedLoading
+                iconCreateFunction={createClusterCustomIcon}
+                maxClusterRadius={50}
+                spiderfyOnMaxZoom={true}
+                showCoverageOnHover={false}
+                zoomToBoundsOnClick={true}
+            >
+                {markers.map((marker, index) => (
+                    <Marker 
+                        key={`${marker.position[0]}-${marker.position[1]}`} // 更好的 key
+                        position={marker.position}
                     >
-                        {renderPopupContent(marker)}
-                    </Popup>
-                </Marker>
-            ))}
-        </MarkerClusterGroup>
+                        <Popup 
+                            maxWidth={300} 
+                            minWidth={250}
+                        >
+                            {renderPopupContent(marker)}
+                        </Popup>
+                    </Marker>
+                ))}
+            </MarkerClusterGroup>
+        </Suspense>
     );
 }
 
@@ -421,18 +432,37 @@ const MapComponent = (props: MapProps & { kmlUrl?: string }) => {
     const kmlUrl = props.kmlUrl || "https://raw.githubusercontent.com/wingyeung0317/-HKOSMP-KML-Google-Maps-/refs/heads/Automatic/motorcycleParking.kml";
     const { center, zoom, height, width } = props;
 
+    // 香港邊界
+    const HK_BOUNDS: [[number, number], [number, number]] = [
+        // Latitude 22°08' North and 22°35' North, 
+        //  Longitude 113°49' East and 114°31' East
+        [22.13, 113.81], // 西南角
+        [22.59, 114.52]  // 東北角
+        
+    ];
+
     return (
         <MapContainer
             center={center || [22.3964, 114.1099]}
             zoom={zoom || 10}
             scrollWheelZoom={true}
             style={{ height: height || "99.9vh", width: width || "100%" }}
+            preferCanvas={true}
+            zoomControl={false}
+            maxBounds={HK_BOUNDS} // 限制地圖邊界
+            maxBoundsViscosity={1.0} // 防止拖拽出邊界
+            minZoom={10} // 設定最小縮放級別
         >
             <TileLayer
                 attribution='&copy; <a href="https://carto.com/attributions">CARTO</a> | &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
                 url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
+                updateWhenIdle={true}
+                keepBuffer={1} // 進一步減少緩衝區
+                bounds={HK_BOUNDS} // 限制圖層邊界
             />
-            <SearchControl />
+            <Suspense fallback={null}>
+                <SearchControl />
+            </Suspense>
             <KmlMarkers kmlUrl={kmlUrl} />
         </MapContainer>
     );
