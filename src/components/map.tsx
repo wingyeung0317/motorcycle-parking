@@ -213,20 +213,76 @@ const handleAppOpen = (appUrl: string, fallbackUrl: string) => {
     }
 };
 
+// 更新載入組件
+const LoadingSpinner = ({ isVisible }: { isVisible: boolean }) => {
+    if (!isVisible) return null;
+    
+    return (
+        <div className={`loading-spinner-overlay ${!isVisible ? 'hidden' : ''}`}>
+            <div className="loading-spinner-container">
+                <div className="loading-spinner"></div>
+                <div className="loading-text">載入停車位資料</div>
+                <div className="loading-subtext">請稍候...</div>
+            </div>
+        </div>
+    );
+};
+
+const LoadingBar = ({ isLoading }: { isLoading: boolean }) => {
+    const [progress, setProgress] = useState(0);
+    
+    useEffect(() => {
+        if (isLoading) {
+            setProgress(0);
+            const interval = setInterval(() => {
+                setProgress(prev => {
+                    if (prev >= 90) return prev;
+                    return prev + Math.random() * 10;
+                });
+            }, 200);
+            
+            return () => clearInterval(interval);
+        } else {
+            setProgress(100);
+            const timeout = setTimeout(() => setProgress(0), 500);
+            return () => clearTimeout(timeout);
+        }
+    }, [isLoading]);
+    
+    if (!isLoading && progress === 0) return null;
+    
+    return (
+        <div className="loading-bar-container">
+            <div 
+                className="loading-bar"
+                style={{ 
+                    width: `${progress}%`,
+                    transition: isLoading ? 'width 0.3s ease' : 'width 0.5s ease, opacity 0.5s ease',
+                    opacity: isLoading ? 1 : 0
+                }}
+            />
+        </div>
+    );
+};
+
 function KmlMarkers({ kmlUrl }: { kmlUrl: string }) {
     const [markers, setMarkers] = useState<Array<{name: string, position: [number, number]}>>([]);
     const [loading, setLoading] = useState(true);
+    const [clusterLoading, setClusterLoading] = useState(false);
+    const [showSpinner, setShowSpinner] = useState(true);
 
     useEffect(() => {
         const controller = new AbortController();
         
         const loadKmlWithFallback = async () => {
             setLoading(true);
+            setClusterLoading(true);
+            setShowSpinner(true);
+            
             try {
-                // 使用 AbortController 來支援取消請求
                 const res = await fetch(kmlUrl, { 
                     signal: controller.signal,
-                    cache: 'force-cache' // 強制使用快取
+                    cache: 'force-cache'
                 });
                 
                 if (!res.ok) {
@@ -235,25 +291,33 @@ function KmlMarkers({ kmlUrl }: { kmlUrl: string }) {
                 
                 const kmlText = await res.text();
                 
-                // 使用 requestIdleCallback 來在瀏覽器空閒時解析
                 if ('requestIdleCallback' in window) {
                     (window as any).requestIdleCallback(() => {
                         const parsedMarkers = parseKmlMarkers(kmlText);
                         setMarkers(parsedMarkers);
                         setLoading(false);
+                        setTimeout(() => {
+                            setClusterLoading(false);
+                            setShowSpinner(false);
+                        }, 1000);
                     });
                 } else {
-                    // Fallback 使用 setTimeout
                     setTimeout(() => {
                         const parsedMarkers = parseKmlMarkers(kmlText);
                         setMarkers(parsedMarkers);
                         setLoading(false);
+                        setTimeout(() => {
+                            setClusterLoading(false);
+                            setShowSpinner(false);
+                        }, 1000);
                     }, 0);
                 }
             } catch (e) {
                 if (e instanceof Error && e.name !== 'AbortError') {
                     console.error('KML 載入失敗:', e);
                     setLoading(false);
+                    setClusterLoading(false);
+                    setShowSpinner(false);
                 }
             }
         };
@@ -390,34 +454,44 @@ function KmlMarkers({ kmlUrl }: { kmlUrl: string }) {
     };
 
     if (loading) {
-        return null; // 或者返回一個輕量的載入指示器
+        return <LoadingBar isLoading={true} />;
     }
 
     return (
-        <Suspense fallback={<div>載入中...</div>}>
-            <MarkerClusterGroup
-                chunkedLoading
-                iconCreateFunction={createClusterCustomIcon}
-                maxClusterRadius={50}
-                spiderfyOnMaxZoom={true}
-                showCoverageOnHover={false}
-                zoomToBoundsOnClick={true}
-            >
-                {markers.map((marker, index) => (
-                    <Marker 
-                        key={`${marker.position[0]}-${marker.position[1]}`} // 更好的 key
-                        position={marker.position}
-                    >
-                        <Popup 
-                            maxWidth={300} 
-                            minWidth={250}
+        <>
+            <LoadingSpinner isVisible={showSpinner} />
+            <LoadingBar isLoading={clusterLoading && !showSpinner} />
+            <Suspense fallback={<LoadingSpinner isVisible={true} />}>
+                <MarkerClusterGroup
+                    chunkedLoading
+                    iconCreateFunction={createClusterCustomIcon}
+                    maxClusterRadius={50}
+                    spiderfyOnMaxZoom={true}
+                    showCoverageOnHover={false}
+                    zoomToBoundsOnClick={true}
+                    onClusteringEnd={() => {
+                        setTimeout(() => {
+                            setClusterLoading(false);
+                            setShowSpinner(false);
+                        }, 300);
+                    }}
+                >
+                    {markers.map((marker, index) => (
+                        <Marker 
+                            key={`${marker.position[0]}-${marker.position[1]}`} // 更好的 key
+                            position={marker.position}
                         >
-                            {renderPopupContent(marker)}
-                        </Popup>
-                    </Marker>
-                ))}
-            </MarkerClusterGroup>
-        </Suspense>
+                            <Popup 
+                                maxWidth={300} 
+                                minWidth={250}
+                            >
+                                {renderPopupContent(marker)}
+                            </Popup>
+                        </Marker>
+                    ))}
+                </MarkerClusterGroup>
+            </Suspense>
+        </>
     );
 }
 
