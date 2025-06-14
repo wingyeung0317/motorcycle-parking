@@ -1,7 +1,7 @@
 {
   "files": {
     "main.css": "/motorcycle-parking/static/css/main.93d933c1.css",
-    "main.js": "/motorcycle-parking/static/js/main.a33dd2a4.js",
+    "main.js": "/motorcycle-parking/static/js/main.5fd0c400.js",
     "static/media/amap.png": "/motorcycle-parking/static/media/amap.d135ac8d32fe4d757430.png",
     "static/media/google-maps.png": "/motorcycle-parking/static/media/google-maps.891771ebbba499b0d054.png",
     "static/media/other-maps.png": "/motorcycle-parking/static/media/other-maps.13834ebbe4e678068f66.png",
@@ -10,10 +10,10 @@
     "static/media/waze.png": "/motorcycle-parking/static/media/waze.65b8f38489f59ff7ecf1.png",
     "index.html": "/motorcycle-parking/index.html",
     "main.93d933c1.css.map": "/motorcycle-parking/static/css/main.93d933c1.css.map",
-    "main.a33dd2a4.js.map": "/motorcycle-parking/static/js/main.a33dd2a4.js.map"
+    "main.5fd0c400.js.map": "/motorcycle-parking/static/js/main.5fd0c400.js.map"
   },
   "entrypoints": [
     "static/css/main.93d933c1.css",
-    "static/js/main.a33dd2a4.js"
+    "static/js/main.5fd0c400.js"
   ]
 }
