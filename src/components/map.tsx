@@ -6,6 +6,13 @@ import L from "leaflet";
 import "leaflet-geosearch/dist/geosearch.css";
 import { GeoSearchControl, OpenStreetMapProvider } from "leaflet-geosearch";
 import "./map.css";
+import { 
+  trackNavigationClick, 
+  trackKmlLoadPerformance, 
+  trackParkingSearch,
+  trackEvent,
+  trackClarityEvent 
+} from '../utils/analytics';
 
 // 解決 marker 圖示不顯示問題
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -34,7 +41,7 @@ function SearchControl() {
     React.useEffect(() => {
         const provider = new OpenStreetMapProvider({
             params: {
-                viewbox: "113.817,22.15,114.433,22.57", // [minLon, minLat, maxLon, maxLat]
+                viewbox: "113.817,22.15,114.433,22.57",
                 bounded: 1,
             },
         });
@@ -48,6 +55,31 @@ function SearchControl() {
             animateZoom: true,
             keepResult: true,
         });
+        
+        // 添加搜尋事件監聽器
+        map.on('geosearch/showlocation', (event: any) => {
+            const location = event.location;
+            // 使用 trackParkingSearch 追蹤搜尋
+            trackParkingSearch(location.label);
+            
+            // 額外追蹤搜尋成功的詳細資訊
+            trackClarityEvent('search_success', {
+                query: location.label,
+                latitude: location.y,
+                longitude: location.x,
+                timestamp: new Date().toISOString()
+            });
+        });
+        
+        // 追蹤搜尋錯誤
+        map.on('geosearch/error', (event: any) => {
+            trackEvent('search_error', 'search', event.error?.message || 'Unknown error');
+            trackClarityEvent('search_error', {
+                error: event.error?.message || 'Unknown error',
+                timestamp: new Date().toISOString()
+            });
+        });
+        
         controlRef.current = searchControl;
         map.addControl(searchControl);
 
@@ -178,8 +210,11 @@ const createNavigationLinks = (lat: number, lng: number, name: string) => {
 };
 
 // 處理 app 開啟的函數
-const handleAppOpen = (appUrl: string, fallbackUrl: string) => {
+const handleAppOpen = (appUrl: string, fallbackUrl: string, appName: string, coordinates: { lat: number; lng: number }) => {
     const device = detectDevice();
+    
+    // 追蹤導航點擊事件
+    trackNavigationClick(appName, coordinates);
     
     if (device.isMobile) {
         // 手機設備使用改進的深度連結處理
@@ -279,6 +314,12 @@ function KmlMarkers({ kmlUrl }: { kmlUrl: string }) {
             setClusterLoading(true);
             setShowSpinner(true);
             
+            const startTime = Date.now();
+            
+            // 追蹤 KML 載入開始
+            trackEvent('kml_load_start', 'data_loading');
+            trackClarityEvent('kml_load_start');
+            
             try {
                 const res = await fetch(kmlUrl, { 
                     signal: controller.signal,
@@ -294,27 +335,40 @@ function KmlMarkers({ kmlUrl }: { kmlUrl: string }) {
                 if ('requestIdleCallback' in window) {
                     (window as any).requestIdleCallback(() => {
                         const parsedMarkers = parseKmlMarkers(kmlText);
+                        const loadTime = Date.now() - startTime;
+                        
                         setMarkers(parsedMarkers);
                         setLoading(false);
                         setTimeout(() => {
                             setClusterLoading(false);
                             setShowSpinner(false);
                         }, 1000);
+                        
+                        // 追蹤載入成功
+                        trackKmlLoadPerformance(loadTime, parsedMarkers.length);
                     });
                 } else {
                     setTimeout(() => {
                         const parsedMarkers = parseKmlMarkers(kmlText);
+                        const loadTime = Date.now() - startTime;
+                        
                         setMarkers(parsedMarkers);
                         setLoading(false);
                         setTimeout(() => {
                             setClusterLoading(false);
                             setShowSpinner(false);
                         }, 1000);
+                        
+                        // 追蹤載入成功
+                        trackKmlLoadPerformance(loadTime, parsedMarkers.length);
                     }, 0);
                 }
             } catch (e) {
                 if (e instanceof Error && e.name !== 'AbortError') {
                     console.error('KML 載入失敗:', e);
+                    // 追蹤載入錯誤
+                    trackEvent('kml_load_error', 'data_loading', e.message);
+                    trackClarityEvent('kml_load_error', { error: e.message });
                     setLoading(false);
                     setClusterLoading(false);
                     setShowSpinner(false);
@@ -344,7 +398,7 @@ function KmlMarkers({ kmlUrl }: { kmlUrl: string }) {
                     <button 
                         onClick={(e) => {
                             e.preventDefault();
-                            handleAppOpen(navLinks.waze.app, navLinks.waze.web);
+                            handleAppOpen(navLinks.waze.app, navLinks.waze.web, 'Waze', { lat, lng });
                         }}
                         className="nav-button waze"
                     >
@@ -362,7 +416,7 @@ function KmlMarkers({ kmlUrl }: { kmlUrl: string }) {
                     <button 
                         onClick={(e) => {
                             e.preventDefault();
-                            handleAppOpen(navLinks.googleMaps.app, navLinks.googleMaps.web);
+                            handleAppOpen(navLinks.googleMaps.app, navLinks.googleMaps.web, 'Google Maps', { lat, lng });
                         }}
                         className="nav-button google"
                     >
@@ -380,7 +434,7 @@ function KmlMarkers({ kmlUrl }: { kmlUrl: string }) {
                     <button 
                         onClick={(e) => {
                             e.preventDefault();
-                            handleAppOpen(navLinks.appleMaps.app, navLinks.appleMaps.web);
+                            handleAppOpen(navLinks.appleMaps.app, navLinks.appleMaps.web, 'Apple Maps', { lat, lng });
                         }}
                         className="nav-button apple"
                     >
@@ -398,7 +452,7 @@ function KmlMarkers({ kmlUrl }: { kmlUrl: string }) {
                     <button 
                         onClick={(e) => {
                             e.preventDefault();
-                            handleAppOpen(navLinks.amap.app, navLinks.amap.web);
+                            handleAppOpen(navLinks.amap.app, navLinks.amap.web, '高德地圖', { lat, lng });
                         }}
                         className="nav-button amap"
                     >
@@ -416,7 +470,7 @@ function KmlMarkers({ kmlUrl }: { kmlUrl: string }) {
                     <button 
                         onClick={(e) => {
                             e.preventDefault();
-                            handleAppOpen(navLinks.baiduMap.app, navLinks.baiduMap.web);
+                            handleAppOpen(navLinks.baiduMap.app, navLinks.baiduMap.web, '百度地圖', { lat, lng });
                         }}
                         className="nav-button baidu"
                     >
@@ -434,7 +488,7 @@ function KmlMarkers({ kmlUrl }: { kmlUrl: string }) {
                     <button 
                         onClick={(e) => {
                             e.preventDefault();
-                            handleAppOpen(navLinks.otherMap.app, navLinks.otherMap.web);
+                            handleAppOpen(navLinks.otherMap.app, navLinks.otherMap.web, '其他地圖', { lat, lng });
                         }}
                         className="nav-button other"> 
                         <img 
