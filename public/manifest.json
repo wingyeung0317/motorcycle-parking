@@ -1,8 +1,7 @@
 {
-  "short_name": "骨位",
-  "name": "香港電單車泊車位",
-  "description": "每日線上更新易通行提供的電單車泊車位，一鍵導航香港電單車泊車位，配搭地圖搜尋功能，出行話咁易。",
-  "lang": "zh-HK",
+  "short_name": "電單車泊車位",
+  "name": "香港電單車街邊泊車位",
+  "description": "每日線上更新易通行提供的電單車泊車位，配搭地圖搜尋功能，一鍵導航香港電單車泊車位。",
   "icons": [
     {
       "src": "favicon.ico",
@@ -12,16 +11,27 @@
     {
       "src": "logo192.png",
       "type": "image/png",
-      "sizes": "192x192"
+      "sizes": "192x192",
+      "purpose": "any maskable"
     },
     {
       "src": "logo512.png",
       "type": "image/png",
-      "sizes": "512x512"
+      "sizes": "512x512",
+      "purpose": "any maskable"
     }
   ],
   "start_url": ".",
   "display": "standalone",
-  "theme_color": "#ffffff",
-  "background_color": "#000000"
+  "theme_color": "#1976d2",
+  "background_color": "#ffffff",
+  "orientation": "portrait-primary",
+  "categories": [
+    "navigation",
+    "travel",
+    "utilities"
+  ],
+  "lang": "zh-HK",
+  "scope": "/",
+  "prefer_related_applications": false
 }
