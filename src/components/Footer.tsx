@@ -35,7 +35,7 @@ const Footer: React.FC = () => {
     <footer className="app-footer">
       <div className="footer-main">
         <span className="footer-text">
-          🏍️ 希望大家平安回家，我唔會好似某D交通App，趕時間仲迫你睇廣告咁PK😉
+          🏍️ 警告：導航前請先查看街景狀況，某些泊車位會設在天橋底下，直接導航或會帶了你上橋。
         </span>
         <button 
           className="donate-toggle"
@@ -61,7 +61,7 @@ const Footer: React.FC = () => {
             </button>
           </div>
           <div className="donate-options">
-            <button
+            {/* <button
               className="donate-link"
               onClick={() => handleDonateClick('Buy Me a Coffee', 'https://buymeacoffee.com/wingyeung0317')}
             >
@@ -78,7 +78,7 @@ const Footer: React.FC = () => {
               onClick={() => handleDonateClick('Patreon', 'https://patreon.com/wingyeung0317')}
             >
               🎁 Patreon
-            </button>
+            </button> */}
             <button
               className="donate-link"
               onClick={() => handleDonateClick('PayPal', 'https://paypal.me/wingyeung0317')}
