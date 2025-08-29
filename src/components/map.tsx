@@ -256,8 +256,8 @@ const LoadingSpinner = ({ isVisible }: { isVisible: boolean }) => {
         <div className={`loading-spinner-overlay ${!isVisible ? 'hidden' : ''}`}>
             <div className="loading-spinner-container">
                 <div className="loading-spinner"></div>
-                <div className="loading-text">載入停車位資料</div>
-                <div className="loading-subtext">請稍候...</div>
+                <div className="loading-text">載入停車位資料中，請稍候...</div>
+                <div className="loading-subtext">警告：導航前請先查看街景狀況，某些泊車位會設在天橋底下，直接導航或會帶了你上橋。</div>
             </div>
         </div>
     );
