@@ -116,6 +116,68 @@
     margin-top: 12px;
 }
 
+.basemap-control {
+    z-index: 1000;
+    margin-top: 10px;
+    margin-right: 10px;
+}
+
+.basemap-control-panel {
+    margin: 0;
+    padding: 0;
+    min-width: 180px;
+    border: 0;
+    background: transparent;
+}
+
+.basemap-toggle,
+.basemap-option {
+    width: 100%;
+    border: 1px solid rgba(0, 0, 0, 0.18);
+    background: rgba(255, 255, 255, 0.96);
+    color: #263238;
+    cursor: pointer;
+    font-size: 13px;
+    text-align: left;
+}
+
+.basemap-toggle {
+    padding: 9px 11px;
+    border-radius: 5px;
+    box-shadow: 0 1px 5px rgba(0, 0, 0, 0.28);
+    font-weight: 600;
+}
+
+.basemap-toggle span {
+    margin-right: 6px;
+}
+
+.basemap-toggle:hover,
+.basemap-option:hover,
+.basemap-option.selected {
+    background: #e8f1f5;
+}
+
+.basemap-options {
+    display: grid;
+    gap: 2px;
+    margin-top: 4px;
+    padding: 4px;
+    border-radius: 5px;
+    background: rgba(255, 255, 255, 0.96);
+    box-shadow: 0 1px 5px rgba(0, 0, 0, 0.28);
+}
+
+.basemap-option {
+    padding: 7px 8px;
+    border: 0;
+    border-radius: 3px;
+}
+
+.basemap-option.selected {
+    font-weight: 700;
+}
+
 /* 響應式設計 */
 @media (max-width: 768px) {
     .navigation-buttons {
@@ -125,6 +187,10 @@
     .nav-button {
         min-width: 100%;
         justify-content: flex-start;
+    }
+
+    .basemap-control-panel {
+        min-width: 155px;
     }
 }
 

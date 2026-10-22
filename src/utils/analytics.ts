@@ -1,4 +1,4 @@
-import Clarity from '@microsoft/Clarity';
+import Clarity from '@microsoft/clarity';
 
 // Google Analytics 設置
 export const GA_MEASUREMENT_ID = 'G-TKSNYS15YM';

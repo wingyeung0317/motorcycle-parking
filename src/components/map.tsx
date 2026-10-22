@@ -556,9 +556,102 @@ interface MapProps {
     width?: string;
 }
 
+const BASE_MAPS = [
+    {
+        id: "victoria-city-1897",
+        name: "1897 維多利亞城",
+        url: "https://historicalwalkhk.com/map/victoriacity-1897/{z}/{x}/{y}.png",
+        attribution: '&copy; <a href="https://historicalwalkhk.com/">Historical Walk HK</a>',
+    },
+    {
+        id: "hk-basemap",
+        name: "香港地圖",
+        url: "https://mapapi.geodata.gov.hk/gs/api/v1.0.0/xyz/basemap/WGS84/{z}/{x}/{y}.png",
+        attribution: '&copy; <a href="https://www.geodata.gov.hk/">香港地理空間數據共享平台</a>',
+    },
+    {
+        id: "hk-imagery",
+        name: "香港影像",
+        url: "https://mapapi.geodata.gov.hk/gs/api/v1.0.0/xyz/imagery/WGS84/{z}/{x}/{y}.png",
+        attribution: '&copy; <a href="https://www.geodata.gov.hk/">香港地理空間數據共享平台</a>',
+    },
+    {
+        id: "openstreetmap",
+        name: "OpenStreetMap",
+        url: "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+    },
+    {
+        id: "arcgis-imagery",
+        name: "Esri 衛星影像",
+        url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+        attribution: '&copy; <a href="https://www.esri.com/">Esri</a>',
+    },
+    {
+        id: "arcgis-street",
+        name: "Esri 街道地圖",
+        url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}",
+        attribution: '&copy; <a href="https://www.esri.com/">Esri</a>',
+    },
+    {
+        id: "arcgis-topo",
+        name: "Esri 地形圖",
+        url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}",
+        attribution: '&copy; <a href="https://www.esri.com/">Esri</a>',
+    },
+] as const;
+
+function BaseMapSwitcher({
+    selectedId,
+    onSelect,
+}: {
+    selectedId: string;
+    onSelect: (id: string) => void;
+}) {
+    const [isOpen, setIsOpen] = useState(false);
+    const selectedMap = BASE_MAPS.find((baseMap) => baseMap.id === selectedId) || BASE_MAPS[0];
+
+    return (
+        <div className="basemap-control leaflet-top leaflet-right">
+            <div className="leaflet-control basemap-control-panel">
+                <button
+                    type="button"
+                    className="basemap-toggle"
+                    aria-expanded={isOpen}
+                    aria-controls="basemap-options"
+                    onClick={() => setIsOpen((open) => !open)}
+                >
+                    <span aria-hidden="true">▣</span>
+                    底圖：{selectedMap.name}
+                </button>
+                {isOpen && (
+                    <div id="basemap-options" className="basemap-options" role="group" aria-label="選擇底圖">
+                        {BASE_MAPS.map((baseMap) => (
+                            <button
+                                type="button"
+                                key={baseMap.id}
+                                className={`basemap-option ${baseMap.id === selectedId ? "selected" : ""}`}
+                                aria-pressed={baseMap.id === selectedId}
+                                onClick={() => {
+                                    onSelect(baseMap.id);
+                                    setIsOpen(false);
+                                }}
+                            >
+                                {baseMap.name}
+                            </button>
+                        ))}
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+}
+
 const MapComponent = (props: MapProps & { kmlUrl?: string }) => {
     const kmlUrl = props.kmlUrl || "https://raw.githubusercontent.com/wingyeung0317/-HKOSMP-KML-Google-Maps-/refs/heads/Automatic/motorcycleParking.kml";
     const { center, zoom, height, width } = props;
+    const [selectedBaseMapId, setSelectedBaseMapId] = useState<string>("arcgis-street");
+    const selectedBaseMap = BASE_MAPS.find((baseMap) => baseMap.id === selectedBaseMapId) || BASE_MAPS[0];
 
     // 香港邊界
     const HK_BOUNDS: [[number, number], [number, number]] = [
@@ -581,9 +674,11 @@ const MapComponent = (props: MapProps & { kmlUrl?: string }) => {
             maxBoundsViscosity={1.0} // 防止拖拽出邊界
             minZoom={10} // 設定最小縮放級別
         >
+            <BaseMapSwitcher selectedId={selectedBaseMap.id} onSelect={setSelectedBaseMapId} />
             <TileLayer
-                attribution='&copy; <a href="https://carto.com/attributions">CARTO</a> | &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
+                key={selectedBaseMap.id}
+                attribution={selectedBaseMap.attribution}
+                url={selectedBaseMap.url}
                 updateWhenIdle={true}
                 keepBuffer={1} // 進一步減少緩衝區
                 bounds={HK_BOUNDS} // 限制圖層邊界
